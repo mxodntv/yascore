@@ -1,0 +1,12 @@
+[Unit]
+Description=Yascore LAN HTTP proxy (Mini2 YouTube via PC VPN)
+After=network-online.target
+
+[Service]
+# Repo template. Installed user units under ~/.config/systemd/user are local.
+ExecStart=/opt/yascore/.venv/bin/proxy --hostname 0.0.0.0 --port 8888 --log-level INFO
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
