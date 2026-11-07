@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 /config.yml
 config.yaml
+PLAN.md
 /tmp/
 *.mp3
 *.wav

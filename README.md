@@ -62,5 +62,3 @@ make integration
 ```
 
 `make test` — юнит-тесты. `make integration` — автотесты с тегом `integration`: они пропускают шаг, если воркер или сеть недоступны.
-
-Решения и статус: [PLAN.md](PLAN.md).
