@@ -1,0 +1,49 @@
+.venv/
+__pycache__/
+*.pyc
+/config.yml
+config.yaml
+/tmp/
+*.mp3
+*.wav
+*.log
+*.db
+*.db-*
+
+artifacts/
+/bin/
+data/skills.json
+skills/*/data/*.json
+skills/*/data/*.json.tmp
+skills/*/data/*.json.lock
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/*.jsonl
+data/mediabuttons.json
+data/mic/
+
+# User runtime: conversations, mic clips, sqlite, media buttons, old skills.json,
+# TTS WAV cache (data/tts-cache/*.wav). No tracked README or .gitkeep under data/.
+data/
+
+# Per-skill user state (place, mood, currency, likes leftovers). Skill source and README stay.
+skills/*/data/
+
+# IDE
+.idea/
+
+# Secrets and local copies. Not every JSON file.
+scripts/local.env
+.env
+.env.*
+*cookies*
+*credentials*
+config.json
+*quasar*config.json
+*qb-config*
+*api_key*
+*apikey*
+*api-key*
+
