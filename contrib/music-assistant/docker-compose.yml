@@ -4,7 +4,7 @@
 # UI: http://<host>:8095 → Player providers → Yandex Station
 services:
   music-assistant-server:
-    image: ghcr.io/music-assistant/server:stable
+    image: ghcr.io/music-assistant/server:2.11.0.dev2026110804
     container_name: music-assistant-server
     restart: unless-stopped
     network_mode: host
