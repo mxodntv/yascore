@@ -1,0 +1,14 @@
+# Music Assistant pilot: stream from PC to Yandex Station via Glagol.
+# Requires Docker daemon + host networking on the same LAN as the column.
+# Start: scripts/music-assistant-up.sh
+# UI: http://<host>:8095 → Player providers → Yandex Station
+services:
+  music-assistant-server:
+    image: ghcr.io/music-assistant/server:stable
+    container_name: music-assistant-server
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${MUSIC_ASSISTANT_DATA:-${HOME}/docker/music-assistant-server/data}:/data
+    environment:
+      - LOG_LEVEL=info
