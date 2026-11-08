@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"yascore/config"
+	"yascore/internal/music"
 	"yascore/skills/currency"
 	"yascore/skills/mood"
 	"yascore/skills/rutube"
@@ -13,7 +14,7 @@ import (
 	"yascore/skills/weather"
 	"yascore/skills/websearch"
 	"yascore/skills/youtube"
-	youtubemusic "yascore/skills/youtube-music"
+    "yascore/skills/musicyoutube"
 )
 
 type skillReg struct {
@@ -21,7 +22,7 @@ type skillReg struct {
 	fn   func(context.Context, string) error
 }
 
-func skillRegs(cfg config.Config, on config.SkillSet) []skillReg {
+func skillRegs(cfg config.Config, on config.SkillSet, store *music.Store) []skillReg {
 	regs := []skillReg{
 		{"youtube", youtube.Register},
 		{"rutube", rutube.Register},
@@ -34,10 +35,10 @@ func skillRegs(cfg config.Config, on config.SkillSet) []skillReg {
 			return websearch.Register(ctx, url, search)
 		}})
 	}
-	if on.YouTubeMusic {
-		music := cfg.Skills.YouTubeMusic
-		regs = append(regs, skillReg{"youtubemusic", func(ctx context.Context, url string) error {
-			return youtubemusic.Register(ctx, url, music)
+	if on.MusicYouTube {
+		musicCfg := cfg.Skills.MusicYouTube
+		regs = append(regs, skillReg{"musicyoutube", func(ctx context.Context, url string) error {
+			return musicyoutube.Register(ctx, url, musicCfg, store)
 		}})
 	}
 	if on.Mood {
@@ -62,8 +63,8 @@ func skillRegs(cfg config.Config, on config.SkillSet) []skillReg {
 }
 
 // registerSkills dials the hub. Call it only after the HTTP server is listening.
-func registerSkills(ctx context.Context, cfg config.Config, on config.SkillSet, connected func() int) {
-	regs := skillRegs(cfg, on)
+func registerSkills(ctx context.Context, cfg config.Config, on config.SkillSet, store *music.Store, connected func() int) {
+	regs := skillRegs(cfg, on, store)
 	for _, reg := range regs {
 		reg := reg
 		go func() {

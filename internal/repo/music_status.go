@@ -6,19 +6,19 @@ import (
 	"strings"
 )
 
-type ytmTrack struct {
+type musicTrack struct {
 	ID      string `json:"id"`
 	Title   string `json:"title"`
 	Artists string `json:"artists"`
 }
 
-type ytmSpot struct {
+type musicSpot struct {
 	MS      int
 	Raw     string
 	Seconds bool
 }
 
-func spotFromStatus(statusJSON string) ytmSpot {
+func spotFromStatus(statusJSON string) musicSpot {
 	var parsed struct {
 		State struct {
 			PositionMS json.RawMessage `json:"position_ms"`
@@ -29,28 +29,28 @@ func spotFromStatus(statusJSON string) ytmSpot {
 		} `json:"state"`
 	}
 	if json.Unmarshal([]byte(statusJSON), &parsed) != nil {
-		return ytmSpot{MS: -1}
+		return musicSpot{MS: -1}
 	}
 	if n, ok := jsonInt(parsed.State.PositionMS); ok {
-		return ytmSpot{MS: n, Raw: strconv.Itoa(n) + "ms", Seconds: true}
+		return musicSpot{MS: n, Raw: strconv.Itoa(n) + "ms", Seconds: true}
 	}
 	if n, ok := jsonInt(parsed.State.Progress); ok {
-		return ytmSpot{MS: n, Raw: strconv.Itoa(n) + "ms", Seconds: true}
+		return musicSpot{MS: n, Raw: strconv.Itoa(n) + "ms", Seconds: true}
 	}
 	if f, ok := jsonFloat(parsed.State.Elapsed); ok {
 		ms := int(f * 1000)
 		if ms < 0 {
 			ms = 0
 		}
-		return ytmSpot{MS: ms, Raw: strconv.FormatFloat(f, 'f', -1, 64) + "s", Seconds: true}
+		return musicSpot{MS: ms, Raw: strconv.FormatFloat(f, 'f', -1, 64) + "s", Seconds: true}
 	}
 	if text := jsonText(parsed.State.Position); text != "" {
-		return ytmSpot{MS: -1, Raw: text}
+		return musicSpot{MS: -1, Raw: text}
 	}
 	if parsed.State.Index != nil {
-		return ytmSpot{MS: -1, Raw: "index:" + strconv.Itoa(*parsed.State.Index)}
+		return musicSpot{MS: -1, Raw: "index:" + strconv.Itoa(*parsed.State.Index)}
 	}
-	return ytmSpot{MS: -1}
+	return musicSpot{MS: -1}
 }
 
 func jsonInt(raw json.RawMessage) (int, bool) {
@@ -93,25 +93,70 @@ func jsonText(raw json.RawMessage) string {
 	return strings.Trim(string(raw), `"`)
 }
 
-func trackFromStatus(statusJSON string) (ytmTrack, bool) {
+func trackFromStatus(statusJSON string) (musicTrack, bool) {
+	queue, index, ok := queueFromStatus(statusJSON)
+	if !ok {
+		return musicTrack{}, false
+	}
+	t := queue[index]
+	if strings.TrimSpace(t.Title) == "" && strings.TrimSpace(t.ID) == "" {
+		return musicTrack{}, false
+	}
+	return t, true
+}
+
+func queueFromStatus(statusJSON string) ([]musicTrack, int, bool) {
 	var parsed struct {
 		State struct {
-			Index int        `json:"index"`
-			Queue []ytmTrack `json:"queue"`
+			Index int          `json:"index"`
+			Queue []musicTrack `json:"queue"`
 		} `json:"state"`
 	}
 	if json.Unmarshal([]byte(statusJSON), &parsed) != nil || len(parsed.State.Queue) == 0 {
-		return ytmTrack{}, false
+		return nil, 0, false
 	}
 	i := parsed.State.Index
 	if i < 0 || i >= len(parsed.State.Queue) {
 		i = 0
 	}
-	t := parsed.State.Queue[i]
-	if strings.TrimSpace(t.Title) == "" && strings.TrimSpace(t.ID) == "" {
-		return ytmTrack{}, false
+	return parsed.State.Queue, i, true
+}
+
+// neighborIDs returns track ids around index: back steps behind, ahead steps ahead.
+func neighborIDs(queue []musicTrack, index, back, ahead int) (behind, forward []string) {
+	behindTracks, forwardTracks := neighborTracks(queue, index, back, ahead)
+	for _, t := range behindTracks {
+		if id := strings.TrimSpace(t.ID); id != "" {
+			behind = append(behind, id)
+		}
 	}
-	return t, true
+	for _, t := range forwardTracks {
+		if id := strings.TrimSpace(t.ID); id != "" {
+			forward = append(forward, id)
+		}
+	}
+	return behind, forward
+}
+
+func neighborTracks(queue []musicTrack, index, back, ahead int) (behind, forward []musicTrack) {
+	if index < 0 || index >= len(queue) {
+		return nil, nil
+	}
+	for step := 1; step <= back; step++ {
+		i := index - step
+		if i < 0 {
+			break
+		}
+		behind = append(behind, queue[i])
+	}
+	for step := 1; step <= ahead; step++ {
+		i := index + step
+		if i >= len(queue) {
+			break
+		}
+		forward = append(forward, queue[i])
+	}
+	return behind, forward
 }
 
 func summarizeStatus(statusJSON string) string {
@@ -120,7 +165,7 @@ func summarizeStatus(statusJSON string) string {
 			Status string     `json:"status"`
 			Error  string     `json:"error"`
 			Index  int        `json:"index"`
-			Queue  []ytmTrack `json:"queue"`
+			Queue  []musicTrack `json:"queue"`
 		} `json:"state"`
 	}
 	if json.Unmarshal([]byte(statusJSON), &parsed) != nil || parsed.State.Status == "" {
@@ -162,7 +207,7 @@ func nextMusicAction(statusJSON string) string {
 	var parsed struct {
 		State struct {
 			Status string     `json:"status"`
-			Queue  []ytmTrack `json:"queue"`
+			Queue  []musicTrack `json:"queue"`
 		} `json:"state"`
 	}
 	if json.Unmarshal([]byte(statusJSON), &parsed) != nil {
@@ -220,7 +265,7 @@ func playerStatus(statusJSON string) string {
 
 func pickTrackID(searchJSON, query string) string {
 	var parsed struct {
-		Tracks []ytmTrack `json:"tracks"`
+		Tracks []musicTrack `json:"tracks"`
 	}
 	if json.Unmarshal([]byte(searchJSON), &parsed) != nil || len(parsed.Tracks) == 0 {
 		return ""

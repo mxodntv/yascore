@@ -34,17 +34,33 @@ cp config.yml.example config.yml
 
 ## Запуск
 
-Из корня репозитория, когда `config.yml` уже заполнен:
+Из корня репозитория, когда `config.yml` уже заполнен. Нужны user-unit’ы `yascore.service` и `yascore-proxy.service`.
+
+Зависимости (LAN-прокси и Silero TTS):
 
 ```sh
-make up
+make env-run    # остановить, если уже запущено, и поднять заново
+make env-stop
 ```
 
-Это собирает `bin/yascore`, поднимает синтез по `core.tts.url`, если он ещё не отвечает, и перезапускает user-unit `yascore.service`. Для голоса в `config.yml` нужны `core.tts.python` и `core.tts.model`. Модель берётся из `core.llm`.
+Сервер ассистента:
+
+```sh
+make run        # stop → пересборка bin/yascore → restart yascore.service
+make stop
+```
+
+Всё сразу:
+
+```sh
+make up         # env-run + run
+```
+
+Для голоса в `config.yml` нужны `core.tts.python` и `core.tts.model`. Модель берётся из `core.llm`.
 
 Проверка — адрес из `core.server.listen`. Если там `0.0.0.0`, с этой машины открывайте `127.0.0.1` и тот же порт. Синтез проверяется по `core.tts.url`.
 
-Колонка, если `skills.youtube_music.host` заполнен:
+Колонка, если `skills.musicyoutube.host` заполнен:
 
 ```sh
 make column
@@ -52,7 +68,7 @@ scripts/point-mini2.sh
 scripts/local-voice.sh
 ```
 
-Скрипты берут хост, пути и промпт моста из `config.yml`.
+Скрипты берут хост, пути и промпт моста из `config.yml`. Плеер колонки в ядре — `MusicPlayer` (`internal/repo`); скилл `musicyoutube` только отдаёт интенты. Лайки, очередь и журнал прослушиваний — `music_tracks` / `music_plays` / `music_history` / `music_playback` в `data/yascore.db`.
 
 ## Проверки
 

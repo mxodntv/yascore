@@ -100,7 +100,7 @@ func TestHubSoundLevel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() { _ = hub.Accept(ctx, conn) }()
-	reg, _ := json.Marshal(domain.BusMessage{Type: "register", Name: "youtubemusic", Sound: true})
+	reg, _ := json.Marshal(domain.BusMessage{Type: "register", Name: "musicyoutube", Sound: true})
 	conn.in <- reg
 	select {
 	case <-conn.out:
@@ -120,10 +120,10 @@ func TestHubSoundLevel(t *testing.T) {
 		}
 	}()
 	levels := hub.Levels(ctx)
-	if len(levels) != 1 || levels[0].Name != "youtubemusic" || levels[0].Percent != 80 || !levels[0].Active {
+	if len(levels) != 1 || levels[0].Name != "musicyoutube" || levels[0].Percent != 80 || !levels[0].Active {
 		t.Fatalf("levels %+v", levels)
 	}
-	if err := hub.SetLevel(ctx, "youtubemusic", 56); err != nil {
+	if err := hub.SetLevel(ctx, "musicyoutube", 56); err != nil {
 		t.Fatal(err)
 	}
 }

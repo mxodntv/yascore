@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestPlayMusicReturnsSearchIntent(t *testing.T) {
-	s := Speaker{}
+	s := &Speaker{}
 	got, err := s.handle(context.Background(), "play_music", `{"query":"Get Lucky","kind":"track"}`)
 	if err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestPlayMusicReturnsSearchIntent(t *testing.T) {
 }
 
 func TestVagueMusicReturnsResumeMixIntent(t *testing.T) {
-	s := Speaker{}
+	s := &Speaker{}
 	got, err := s.handle(context.Background(), "play_music", `{"query":"","kind":"any"}`)
 	if err != nil {
 		t.Fatal(err)
@@ -32,8 +32,30 @@ func TestVagueMusicReturnsResumeMixIntent(t *testing.T) {
 	}
 }
 
+func TestMixKindReturnsPlayMixIntent(t *testing.T) {
+	s := &Speaker{}
+	got, err := s.handle(context.Background(), "play_music", `{"query":"","kind":"mix"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, domain.MusicPlayMix) {
+		t.Fatalf("got %s", got)
+	}
+}
+
+func TestResumeKindReturnsResumeOnlyIntent(t *testing.T) {
+	s := &Speaker{}
+	got, err := s.handle(context.Background(), "play_music", `{"query":"","kind":"resume"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, domain.MusicResumeOnly) {
+		t.Fatalf("got %s", got)
+	}
+}
+
 func TestPlaylistReturnsPlayIntent(t *testing.T) {
-	s := Speaker{}
+	s := &Speaker{}
 	got, err := s.handle(context.Background(), "play_music", `{"query":"jazz","kind":"playlist"}`)
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +67,7 @@ func TestPlaylistReturnsPlayIntent(t *testing.T) {
 }
 
 func TestEmptyTrackIsVagueMusic(t *testing.T) {
-	s := Speaker{}
+	s := &Speaker{}
 	got, err := s.handle(context.Background(), "play_music", `{"query":"","kind":"track"}`)
 	if err != nil {
 		t.Fatal(err)
@@ -56,7 +78,7 @@ func TestEmptyTrackIsVagueMusic(t *testing.T) {
 }
 
 func TestPauseResumeAcknowledgeWithoutSSH(t *testing.T) {
-	s := Speaker{}
+	s := &Speaker{}
 	got, err := s.handle(context.Background(), "pause", "")
 	if err != nil || got != "ok" {
 		t.Fatalf("%q %v", got, err)
@@ -68,7 +90,7 @@ func TestPauseResumeAcknowledgeWithoutSSH(t *testing.T) {
 }
 
 func TestMusicControlPauseIsIntent(t *testing.T) {
-	s := Speaker{}
+	s := &Speaker{}
 	got, err := s.handle(context.Background(), "music_control", `{"action":"pause"}`)
 	if err != nil {
 		t.Fatal(err)

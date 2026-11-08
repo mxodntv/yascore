@@ -89,12 +89,12 @@ func Validate(c Config) (SkillSet, error) {
 	if !on.Mood {
 		Warn("skill off", "skill", "mood", "reason", "database or tones empty")
 	}
-	on.YouTubeMusic = youtubeOn(&errs, c.Skills.YouTubeMusic)
-	if on.YouTubeMusic {
-		need(c.Skills.YouTubeMusic.Port <= 0, "skills.youtube_music.port must be positive")
-		need(strings.TrimSpace(c.Skills.YouTubeMusic.User) == "", "skills.youtube_music.user is empty")
-		need(strings.TrimSpace(c.Skills.YouTubeMusic.Bin) == "", "skills.youtube_music.bin is empty")
-		need(strings.TrimSpace(c.Skills.YouTubeMusic.Database) == "", "skills.youtube_music.database is empty")
+	on.MusicYouTube = youtubeOn(&errs, c.Skills.MusicYouTube)
+	if on.MusicYouTube {
+		need(c.Skills.MusicYouTube.Port <= 0, "skills.musicyoutube.port must be positive")
+		need(strings.TrimSpace(c.Skills.MusicYouTube.User) == "", "skills.musicyoutube.user is empty")
+		need(strings.TrimSpace(c.Skills.MusicYouTube.Bin) == "", "skills.musicyoutube.bin is empty")
+		need(strings.TrimSpace(c.Skills.MusicYouTube.Database) == "", "skills.musicyoutube.database is empty")
 	}
 	if len(errs) == 0 {
 		return on, nil
@@ -117,13 +117,13 @@ func skillURL(errs *[]string, name, raw string) bool {
 	return true
 }
 
-func youtubeOn(errs *[]string, y YouTubeMusic) bool {
+func youtubeOn(errs *[]string, y MusicYouTube) bool {
 	if strings.TrimSpace(y.Host) == "" || strings.TrimSpace(y.ServiceURL) == "" {
-		Warn("skill off", "skill", "skills.youtube_music", "reason", "host empty")
+		Warn("skill off", "skill", "skills.musicyoutube", "reason", "host empty")
 		return false
 	}
 	if err := needHTTP(y.ServiceURL); err != nil {
-		*errs = append(*errs, "skills.youtube_music.service_url: "+err.Error())
+		*errs = append(*errs, "skills.musicyoutube.service_url: "+err.Error())
 		return false
 	}
 	return true

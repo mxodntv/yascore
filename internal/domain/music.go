@@ -18,6 +18,8 @@ const (
 	MusicPlay       = "play"
 	MusicSearchPlay = "search_play"
 	MusicResumeMix  = "resume_or_mix"
+	MusicPlayMix    = "play_mix"
+	MusicResumeOnly = "resume_only"
 	MusicControl    = "control"
 	MusicSay        = "say"
 	MusicLike       = "like"

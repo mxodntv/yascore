@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"yascore/internal/domain"
+	"yascore/internal/music"
 )
 
 func TestLikeUnlikeAndPlaySavedTrack(t *testing.T) {
@@ -47,7 +48,7 @@ func TestLikeUnlikeAndPlaySavedTrack(t *testing.T) {
 	if json.Unmarshal([]byte(got), &intent) != nil || intent.Do != domain.MusicSearchPlay {
 		t.Fatalf("play likes %s", got)
 	}
-	if !strings.Contains(intent.Query, "Get Lucky") && !strings.Contains(intent.Query, "abc") {
+	if !strings.Contains(intent.Query, "Get Lucky") || !strings.Contains(intent.Query, "Daft Punk") {
 		t.Fatalf("query %q", intent.Query)
 	}
 
@@ -129,7 +130,7 @@ func TestNothingPlayingToLike(t *testing.T) {
 }
 
 func TestControlPreviousIsIntent(t *testing.T) {
-	got, err := Speaker{}.handle(context.Background(), "music_control", `{"action":"previous"}`)
+	got, err := (&Speaker{}).handle(context.Background(), "music_control", `{"action":"previous"}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,9 +148,9 @@ func assertSay(t *testing.T, raw, want string) {
 	}
 }
 
-func openMusic(t *testing.T) *Store {
+func openMusic(t *testing.T) *music.Store {
 	t.Helper()
-	db, err := Open(filepath.Join(t.TempDir(), "yascore.db"))
+	db, err := music.Open(filepath.Join(t.TempDir(), "yascore.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

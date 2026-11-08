@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"context"

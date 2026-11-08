@@ -24,9 +24,10 @@ func globalStop(text string) bool {
 
 // playerCommand is a bare player phrase. It skips the model.
 type playerCommand struct {
-	tool   string
-	args   string
-	memory string
+	tool     string
+	args     string
+	memory   string
+	keepHold bool // like/unlike: wake pause must resume after the spoken reply
 }
 
 // playerAction recognizes a bare player command after the wake names are gone.
@@ -41,16 +42,20 @@ func playerAction(text string) (playerCommand, bool) {
 		return controlCommand("next", "Следующий трек."), true
 	case "назад", "предыдущий", "предыдущий трек", "предыдущая песня":
 		return controlCommand("previous", "Предыдущий трек."), true
-	case "продолжи", "продолжи музыку":
-		return controlCommand("resume", "Продолжила музыку."), true
-	case "музыка", "музыку", "включи музыку", "поставь музыку", "включай", "включай музыку", "играй", "играй музыку":
+	case "продолжи", "продолжи музыку", "продолжай", "продолжай музыку", "продолжи песню", "продолжай песню":
+		return playerCommand{tool: "play_music", args: `{"query":"","kind":"resume"}`, memory: "Продолжила музыку."}, true
+	case "включи другое", "включи музыку", "поставь музыку":
+		return playerCommand{tool: "play_music", args: `{"query":"","kind":"mix"}`, memory: "Включила музыку."}, true
+	case "музыка", "музыку", "включай", "включай музыку", "играй", "играй музыку":
 		return playerCommand{tool: "play_music", args: `{"query":"","kind":"any"}`, memory: "Включила музыку."}, true
 	case "лайк", "нравится", "like":
-		return controlCommand("like", domain.LikedReply), true
+		return holdControl("like", domain.LikedReply), true
 	case "убери лайк", "не нравится", "unlike":
-		return controlCommand("unlike", domain.UnlikedReply), true
+		return holdControl("unlike", domain.UnlikedReply), true
 	case "включи лайки", "включи что-нибудь из лайков", "включи что нибудь из лайков":
 		return playerCommand{tool: "play_music", args: `{"query":"","kind":"likes"}`, memory: "Включила из лайков."}, true
+	case "включи лайки вперемешку", "лайки вперемешку", "включи любимое вперемешку", "любимое вперемешку":
+		return playerCommand{tool: "play_music", args: `{"query":"","kind":"shuffle"}`, memory: "Включила из лайков."}, true
 	case "что-нибудь такое же", "что нибудь такое же", "что-нибудь похожее", "что нибудь похожее":
 		return playerCommand{tool: "play_music", args: `{"query":"","kind":"similar"}`, memory: "Похожее."}, true
 	default:
@@ -60,4 +65,10 @@ func playerAction(text string) (playerCommand, bool) {
 
 func controlCommand(action, memory string) playerCommand {
 	return playerCommand{tool: "music_control", args: `{"action":"` + action + `"}`, memory: memory}
+}
+
+func holdControl(action, memory string) playerCommand {
+	cmd := controlCommand(action, memory)
+	cmd.keepHold = true
+	return cmd
 }

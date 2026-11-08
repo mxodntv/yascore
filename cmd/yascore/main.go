@@ -14,6 +14,7 @@ import (
 
 	"yascore/config"
 	"yascore/internal/domain"
+	"yascore/internal/music"
 	"yascore/internal/repo"
 	"yascore/internal/server"
 	"yascore/internal/skillstate"
@@ -55,14 +56,23 @@ func main() {
 	mood.Install(cfg.Skills.Mood.Tones)
 
 	hub := repo.NewHub()
-	var player *repo.YTMPlayer
-	if on.YouTubeMusic {
-		player = repo.NewYTMPlayer(repo.NewColumn(
-			cfg.Skills.YouTubeMusic.Host,
-			cfg.Skills.YouTubeMusic.Port,
-			cfg.Skills.YouTubeMusic.User,
-			cfg.Skills.YouTubeMusic.Bin,
-		), cfg.Skills.YouTubeMusic.ServiceURL)
+	var player *repo.MusicPlayer
+	var musicDB *music.Store
+	if on.MusicYouTube {
+		var err error
+		musicDB, err = music.Open(cfg.Skills.MusicYouTube.Database)
+		if err != nil {
+			config.Error("music database", "err", err)
+			os.Exit(1)
+		}
+		defer musicDB.Close()
+		player = repo.NewMusicPlayer(repo.NewColumn(
+			cfg.Skills.MusicYouTube.Host,
+			cfg.Skills.MusicYouTube.Port,
+			cfg.Skills.MusicYouTube.User,
+			cfg.Skills.MusicYouTube.Bin,
+		), cfg.Skills.MusicYouTube.ServiceURL)
+		player.UseMemory(music.PlayerMemory{Store: musicDB})
 		hub.UsePlayer(player)
 	}
 	var journal domain.TurnLogger
@@ -147,7 +157,7 @@ func main() {
 		config.Error("migrate", "err", err)
 		os.Exit(1)
 	}
-	registerSkills(ctx, cfg, on, hub.Count)
+	registerSkills(ctx, cfg, on, musicDB, hub.Count)
 	if player != nil {
 		go player.StartWatch(ctx)
 	}

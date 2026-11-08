@@ -121,6 +121,9 @@ func (u *Utterance) mediaHolding() bool {
 }
 
 func (u *Utterance) quietFor(reply domain.Reply) time.Duration {
+	if reply.Instant {
+		return 0
+	}
 	ask := resumeAfterQuestion
 	quiet := resumeQuiet
 	if u != nil {

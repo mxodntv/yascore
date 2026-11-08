@@ -1,8 +1,8 @@
-package youtubemusic
+package musicyoutube
 
 import "testing"
 
 func TestSkillKeepsNoColumnSSH(t *testing.T) {
-	// Pause/resume/seek live in internal/repo.YTMPlayer.
+	// Pause/resume/seek live in internal/repo.MusicPlayer.
 	_ = testing.Verbose()
 }
