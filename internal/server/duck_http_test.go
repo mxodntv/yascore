@@ -27,7 +27,7 @@ type orderBoard struct {
 func (b *orderBoard) Levels(context.Context) []domain.SoundLevel {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return []domain.SoundLevel{{Name: "youtubemusic", Percent: b.percent, Active: true}}
+	return []domain.SoundLevel{{Name: "musicyoutube", Percent: b.percent, Active: true}}
 }
 
 func (b *orderBoard) SetLevel(_ context.Context, _ string, percent int) error {

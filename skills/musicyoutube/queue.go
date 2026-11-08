@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"yascore/internal/domain"
 )
 
-func (s Speaker) previousIntent(ctx context.Context) (string, error) {
+func (s *Speaker) previousIntent(ctx context.Context) (string, error) {
 	if s.music == nil {
 		return intentJSON(domain.MusicIntent{Do: domain.MusicControl, Action: "previous"})
 	}
@@ -22,7 +22,7 @@ func (s Speaker) previousIntent(ctx context.Context) (string, error) {
 	return s.playAtIntent(ctx, state.Index-1)
 }
 
-func (s Speaker) nextIntent(ctx context.Context) (string, error) {
+func (s *Speaker) nextIntent(ctx context.Context) (string, error) {
 	if s.music == nil {
 		return intentJSON(domain.MusicIntent{Do: domain.MusicControl, Action: "next"})
 	}
@@ -36,7 +36,7 @@ func (s Speaker) nextIntent(ctx context.Context) (string, error) {
 	return s.playAtIntent(ctx, state.Index+1)
 }
 
-func (s Speaker) advanceIntent(ctx context.Context) (string, error) {
+func (s *Speaker) advanceIntent(ctx context.Context) (string, error) {
 	state, err := s.load(ctx)
 	if err != nil {
 		return "", err
@@ -48,7 +48,7 @@ func (s Speaker) advanceIntent(ctx context.Context) (string, error) {
 	return s.playAtIntent(ctx, next)
 }
 
-func (s Speaker) playAtIntent(ctx context.Context, index int) (string, error) {
+func (s *Speaker) playAtIntent(ctx context.Context, index int) (string, error) {
 	state, err := s.load(ctx)
 	if err != nil {
 		return "", err
@@ -72,10 +72,7 @@ func (s Speaker) playAtIntent(ctx context.Context, index int) (string, error) {
 	return intentJSON(domain.MusicIntent{Do: domain.MusicSearchPlay, Query: line, Follow: true})
 }
 
-func (s Speaker) storedPhrase(track savedTrack) (string, error) {
-	if q := playbackQuery(track); strings.HasPrefix(q, "http://") || strings.HasPrefix(q, "https://") {
-		return q, nil
-	}
+func (s *Speaker) storedPhrase(track savedTrack) (string, error) {
 	if name := playbackName(track); name != "" {
 		return name, nil
 	}

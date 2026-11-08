@@ -89,7 +89,7 @@ func TestUtteranceWakePausesMediaBeforeLLM(t *testing.T) {
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "")
 	reg, _ := json.Marshal(domain.BusMessage{
-		Type: "register", Name: "youtubemusic", Sound: true, Media: true,
+		Type: "register", Name: "musicyoutube", Sound: true, Media: true,
 		Tools: []domain.Tool{{Name: "play_music"}},
 	})
 	if err := conn.Write(ctx, websocket.MessageText, reg); err != nil {
@@ -152,7 +152,7 @@ func TestUtteranceWakeSecondCommandCancelsFirstResume(t *testing.T) {
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "")
 	reg, _ := json.Marshal(domain.BusMessage{
-		Type: "register", Name: "youtubemusic", Sound: true, Media: true,
+		Type: "register", Name: "musicyoutube", Sound: true, Media: true,
 		Tools: []domain.Tool{{Name: "play_music"}},
 	})
 	if err := conn.Write(ctx, websocket.MessageText, reg); err != nil {
@@ -217,7 +217,7 @@ func TestBarePlayerStopWithoutWake(t *testing.T) {
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "")
 	reg, _ := json.Marshal(domain.BusMessage{
-		Type: "register", Name: "youtubemusic", Sound: true, Media: true,
+		Type: "register", Name: "musicyoutube", Sound: true, Media: true,
 		Tools: []domain.Tool{{Name: "music_control"}, {Name: "play_music"}},
 	})
 	if err := conn.Write(ctx, websocket.MessageText, reg); err != nil {

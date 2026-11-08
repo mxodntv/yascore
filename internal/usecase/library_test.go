@@ -30,7 +30,7 @@ func TestWakePlayerCommandsSkipTheModel(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reply.Quiet || reply.Text != tc.memory {
+			if !reply.Quiet || !reply.Instant || reply.Text != tc.memory {
 				t.Fatalf("reply %+v", reply)
 			}
 			if bus.last.Name != tc.tool || !strings.Contains(bus.last.Arguments, tc.arg) {
@@ -43,9 +43,9 @@ func TestWakePlayerCommandsSkipTheModel(t *testing.T) {
 	}
 }
 
-func TestBareMusicSkipsTheModel(t *testing.T) {
-	name, words := exampleAssistant(t)
-	for _, phrase := range []string{"музыка", name + ", музыку", "включай", "включи музыку", "поставь музыку"} {
+func TestResumePhrasesSkipTheModel(t *testing.T) {
+	_, words := exampleAssistant(t)
+	for _, phrase := range []string{"продолжи", "продолжи музыку", "продолжай", "продолжай музыку", "продолжи песню"} {
 		t.Run(phrase, func(t *testing.T) {
 			bus := &memBus{body: domain.SilentReply}
 			llm := &fakeLLM{text: "уже играет"}
@@ -54,11 +54,43 @@ func TestBareMusicSkipsTheModel(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reply.Quiet || reply.Text != "Включила музыку." {
+			if !reply.Quiet || !reply.Instant || reply.Text != "Продолжила музыку." {
 				t.Fatalf("reply %+v", reply)
 			}
-			if bus.last.Name != "play_music" || !strings.Contains(bus.last.Arguments, `"kind":"any"`) {
+			if bus.last.Name != "play_music" || !strings.Contains(bus.last.Arguments, `"kind":"resume"`) {
 				t.Fatalf("call %+v", bus.last)
+			}
+		})
+	}
+}
+
+func TestBareMusicSkipsTheModel(t *testing.T) {
+	name, words := exampleAssistant(t)
+	cases := []struct {
+		phrase string
+		kind   string
+	}{
+		{"музыка", "any"},
+		{name + ", музыку", "any"},
+		{"включай", "any"},
+		{"включи музыку", "mix"},
+		{"поставь музыку", "mix"},
+		{"включи другое", "mix"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.phrase, func(t *testing.T) {
+			bus := &memBus{body: domain.SilentReply}
+			llm := &fakeLLM{text: "уже играет"}
+			u := New(Deps{LLM: llm, Wake: fakeWake{words: words}, Skills: bus, Prompt: "p"})
+			reply, err := u.HandleUtterance(context.Background(), tc.phrase)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reply.Quiet || !reply.Instant || reply.Text != "Включила музыку." {
+				t.Fatalf("reply %+v", reply)
+			}
+			if bus.last.Name != "play_music" || !strings.Contains(bus.last.Arguments, `"kind":"`+tc.kind+`"`) {
+				t.Fatalf("call %+v want kind %s", bus.last, tc.kind)
 			}
 			if len(llm.seen) != 0 {
 				t.Fatalf("model rounds %d", len(llm.seen))
@@ -95,7 +127,7 @@ func TestLikeCommandsAreSpoken(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if reply.Quiet || reply.Text != tc.spoken {
+			if reply.Quiet || !reply.Instant || reply.Text != tc.spoken {
 				t.Fatalf("reply %+v", reply)
 			}
 			if bus.last.Name != tc.tool || !strings.Contains(bus.last.Arguments, tc.arg) {
@@ -133,7 +165,7 @@ func TestPlayLibraryCommandsStayQuiet(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reply.Quiet || reply.Text != tc.memory {
+			if !reply.Quiet || !reply.Instant || reply.Text != tc.memory {
 				t.Fatalf("reply %+v", reply)
 			}
 			if strings.Contains(reply.Text, "Get Lucky") || strings.Contains(reply.Text, "Daft Punk") {

@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ func TestSharedDocumentCopiesLikesHistoryAndQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := []byte(`{
-  "youtubemusic": {
+  "musicyoutube": {
     "likes": [{"title":"Get Lucky","artists":"Daft Punk"}],
     "recent": {"title":"Instant Crush"},
     "tracks": [{"title":"Alpha"},{"title":"Beta"}],
@@ -31,16 +31,16 @@ func TestSharedDocumentCopiesLikesHistoryAndQueue(t *testing.T) {
 	if err := skillstate.MigrateShared(root); err != nil {
 		t.Fatal(err)
 	}
-	likes := readObject(t, filepath.Join(root, "skills", "youtube-music", "data", "likes.json"))
+	likes := readObject(t, filepath.Join(root, "skills", "musicyoutube", "data", "likes.json"))
 	if _, ok := likes["likes"]; !ok {
 		t.Fatalf("likes %v", likes)
 	}
-	history := readObject(t, filepath.Join(root, "skills", "youtube-music", "data", "history.json"))
+	history := readObject(t, filepath.Join(root, "skills", "musicyoutube", "data", "history.json"))
 	recent, _ := history["recent"].(map[string]any)
 	if recent["title"] != "Instant Crush" {
 		t.Fatalf("history %v", history)
 	}
-	queue := readObject(t, filepath.Join(root, "skills", "youtube-music", "data", "queue.json"))
+	queue := readObject(t, filepath.Join(root, "skills", "musicyoutube", "data", "queue.json"))
 	tracks, _ := queue["tracks"].([]any)
 	if len(tracks) != 2 || queue["index"] != float64(1) {
 		t.Fatalf("queue %v", queue)
@@ -53,7 +53,7 @@ func TestSharedDocumentCopiesLikesHistoryAndQueue(t *testing.T) {
 		t.Fatalf("shared file changed: %s", left)
 	}
 
-	likesPath := filepath.Join(root, "skills", "youtube-music", "data", "likes.json")
+	likesPath := filepath.Join(root, "skills", "musicyoutube", "data", "likes.json")
 	if err := os.WriteFile(likesPath, []byte("{\"likes\":[]}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

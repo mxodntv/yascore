@@ -508,8 +508,18 @@ func musicQuiet(text string) bool {
 }
 
 func (u *Utterance) player(ctx context.Context, past []domain.Message, text string, cmd playerCommand) (domain.Reply, error) {
-	// A bare player command owns playback. Do not resume a wake hold over it.
-	u.clearMediaHold()
+	if cmd.keepHold {
+		// Like/unlike speak a short confirmation; keep (or arm) the wake hold so
+		// music resumes after TTS instead of staying paused.
+		if !u.mediaHolding() {
+			if _, ok := u.skills.(mediaPauser); ok {
+				u.pauseOnWake(ctx)
+			}
+		}
+	} else {
+		// Next/stop/play own the column — do not resume a prior wake hold over them.
+		u.clearMediaHold()
+	}
 	call := domain.ToolCall{ID: "player", Name: cmd.tool, Arguments: cmd.args}
 	var result string
 	err := u.timed(ctx, toolCallName(call.Name), "player", toolDetail(call), func() error {
@@ -520,17 +530,17 @@ func (u *Utterance) player(ctx context.Context, past []domain.Message, text stri
 	trace := []domain.ToolTrace{{Name: cmd.tool, Arguments: cmd.args}}
 	if err != nil {
 		trace[0].Result = err.Error()
-		return u.finish(ctx, past, text, domain.Reply{Text: err.Error()}, trace, "music-control"), nil
+		return u.finish(ctx, past, text, domain.Reply{Text: err.Error(), Instant: true}, trace, "music-control"), nil
 	}
 	result = strings.TrimSpace(result)
 	trace[0].Result = result
 	if spokenLibrary(result) || strings.HasPrefix(result, "не ") || strings.Contains(strings.ToLower(result), "ошиб") {
-		return u.finish(ctx, past, text, domain.Reply{Text: result}, trace, "music-control"), nil
+		return u.finish(ctx, past, text, domain.Reply{Text: result, Instant: true}, trace, "music-control"), nil
 	}
 	if result == "" || result == "ok" || result == domain.SilentReply || musicQuiet(result) {
-		return u.finish(ctx, past, text, domain.Reply{Text: cmd.memory, Quiet: true}, trace, "music-control"), nil
+		return u.finish(ctx, past, text, domain.Reply{Text: cmd.memory, Quiet: true, Instant: true}, trace, "music-control"), nil
 	}
-	return u.finish(ctx, past, text, domain.Reply{Text: cmd.memory, Quiet: true}, trace, "music-control"), nil
+	return u.finish(ctx, past, text, domain.Reply{Text: cmd.memory, Quiet: true, Instant: true}, trace, "music-control"), nil
 }
 
 func toolsOf(ctx context.Context, bus domain.SkillBus) []domain.Tool {

@@ -31,7 +31,7 @@ func (m *memBoard) SetLevel(_ context.Context, name string, percent int) error {
 
 func TestDuckerLowersActiveSkillAndRestores(t *testing.T) {
 	board := &memBoard{levels: []domain.SoundLevel{
-		{Name: "youtubemusic", Percent: 80, Active: true},
+		{Name: "musicyoutube", Percent: 80, Active: true},
 		{Name: "quiet", Percent: 40, Active: false},
 	}}
 	d := NewDucker(board)
@@ -55,7 +55,7 @@ func TestDuckerLowersActiveSkillAndRestores(t *testing.T) {
 }
 
 func TestDuckerCancelRestoresImmediately(t *testing.T) {
-	board := &memBoard{levels: []domain.SoundLevel{{Name: "youtubemusic", Percent: 80, Active: true}}}
+	board := &memBoard{levels: []domain.SoundLevel{{Name: "musicyoutube", Percent: 80, Active: true}}}
 	d := NewDucker(board)
 	gen := d.Begin(context.Background())
 	d.waitApply()
@@ -83,7 +83,7 @@ func (b *failBoard) SetLevel(ctx context.Context, name string, percent int) erro
 }
 
 func TestDuckerRetriesAFailedSetLevel(t *testing.T) {
-	board := &failBoard{memBoard: memBoard{levels: []domain.SoundLevel{{Name: "youtubemusic", Percent: 80, Active: true}}}, fail: 1}
+	board := &failBoard{memBoard: memBoard{levels: []domain.SoundLevel{{Name: "musicyoutube", Percent: 80, Active: true}}}, fail: 1}
 	d := NewDucker(board)
 	d.Begin(context.Background())
 	d.waitApply()
@@ -97,7 +97,7 @@ func TestDuckerRetriesAFailedSetLevel(t *testing.T) {
 }
 
 func TestDuckerReapplyHoldsTheDuckedLevel(t *testing.T) {
-	board := &memBoard{levels: []domain.SoundLevel{{Name: "youtubemusic", Percent: 80, Active: true}}}
+	board := &memBoard{levels: []domain.SoundLevel{{Name: "musicyoutube", Percent: 80, Active: true}}}
 	d := NewDucker(board)
 	d.Begin(context.Background())
 	d.waitApply()
@@ -113,7 +113,7 @@ func TestBeginReturnsWhileThePlayerWriteBlocks(t *testing.T) {
 	entered := make(chan struct{})
 	release := make(chan struct{})
 	board := &blockBoard{
-		memBoard: memBoard{levels: []domain.SoundLevel{{Name: "youtubemusic", Percent: 80, Active: true}}},
+		memBoard: memBoard{levels: []domain.SoundLevel{{Name: "musicyoutube", Percent: 80, Active: true}}},
 		entered:  entered,
 		release:  release,
 	}

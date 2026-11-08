@@ -34,7 +34,7 @@ func TestCommandLogToolAndDuck(t *testing.T) {
 		LLM: llm, Wake: fakeWake{words: words}, Skills: bus,
 		Commands: clog, Prompt: "p",
 	})
-	board := &memBoard{levels: []domain.SoundLevel{{Name: "youtubemusic", Percent: 80, Active: true}}}
+	board := &memBoard{levels: []domain.SoundLevel{{Name: "musicyoutube", Percent: 80, Active: true}}}
 	d := NewDucker(board)
 
 	ctx, scope := OpenCommand(context.Background(), "http", clog)

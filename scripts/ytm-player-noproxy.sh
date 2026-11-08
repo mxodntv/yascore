@@ -15,10 +15,10 @@ if [ -f "$script_dir/local.env" ]; then
 fi
 # shellcheck disable=SC1091
 . "$script_dir/load-config.sh"
-: "${CFG_BIN:?set skills.youtube_music.bin}"
-: "${CFG_PLAYER_HOME:?set skills.youtube_music.player_home}"
-: "${CFG_PROXY_ENV:?set skills.youtube_music.proxy_env}"
-: "${CFG_NO_PROXY:?set skills.youtube_music.no_proxy}"
+: "${CFG_BIN:?set skills.musicyoutube.bin}"
+: "${CFG_PLAYER_HOME:?set skills.musicyoutube.player_home}"
+: "${CFG_PROXY_ENV:?set skills.musicyoutube.proxy_env}"
+: "${CFG_NO_PROXY:?set skills.musicyoutube.no_proxy}"
 HOST="${CFG_USER}@${CFG_HOST}"
 PORT="${CFG_PORT}"
 PROXY=$(python3 -c 'from urllib.parse import urlparse; import sys; print(urlparse(sys.argv[1]).hostname)' "$CFG_PUBLIC_BASE")

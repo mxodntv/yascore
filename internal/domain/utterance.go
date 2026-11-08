@@ -18,10 +18,12 @@ const SilentReply = "[[varya:silent]]"
 const EchoReply = "[[varya:echo]]"
 
 // Reply is the assistant text. Quiet means the column does not speak it.
+// Instant means a bare player command: no follow-up listen window after speech.
 type Reply struct {
-	Text  string
-	Model string
-	Quiet bool
+	Text    string
+	Model   string
+	Quiet   bool
+	Instant bool
 }
 
 // Tool is a function the model may call. Parameters is a JSON Schema object.

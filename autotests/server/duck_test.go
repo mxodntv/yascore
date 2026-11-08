@@ -47,7 +47,7 @@ func TestSpeakDucksSkillThenRestores(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "")
-	reg, _ := json.Marshal(domain.BusMessage{Type: "register", Name: "youtubemusic", Sound: true})
+	reg, _ := json.Marshal(domain.BusMessage{Type: "register", Name: "musicyoutube", Sound: true})
 	if err := conn.Write(ctx, websocket.MessageText, reg); err != nil {
 		t.Fatal(err)
 	}

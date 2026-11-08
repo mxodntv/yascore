@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"os"
@@ -12,6 +12,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	UseService(cfg.Skills.YouTubeMusic.ServiceURL)
+	UseService(cfg.Skills.MusicYouTube.ServiceURL)
 	os.Exit(m.Run())
 }

@@ -13,7 +13,7 @@ fi
 eval "$(python3 - "$json" << 'PY'
 import json, shlex, sys
 c = json.load(open(sys.argv[1], encoding="utf-8"))
-m = c["skills"]["youtube_music"]
+m = c["skills"]["musicyoutube"]
 core = c["core"]
 pairs = {
     "CFG_HOST": m.get("host") or "",
@@ -43,6 +43,6 @@ for key, value in pairs.items():
 PY
 )"
 if [ -z "${CFG_HOST}" ]; then
-  echo "skills.youtube_music.host is empty in config.yml" >&2
+  echo "skills.musicyoutube.host is empty in config.yml" >&2
   exit 1
 fi

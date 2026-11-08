@@ -118,7 +118,10 @@ func (s *Server) utterance(w http.ResponseWriter, r *http.Request) {
 	}
 	out := map[string]any{"text": reply.Text, "model": reply.Model}
 	if len(audio.Bytes) > 0 {
-		hold := domain.WAVDuration(audio.Bytes) + 4*time.Second
+		hold := domain.WAVDuration(audio.Bytes)
+		if !reply.Instant {
+			hold += 4 * time.Second
+		}
 		s.utt.HoldSpeech(hold)
 		url, saveErr := s.saveAudio(audio)
 		if saveErr != nil {

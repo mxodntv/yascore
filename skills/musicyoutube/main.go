@@ -1,7 +1,6 @@
-// Package youtubemusic is the YouTube Music skill.
-// Likes and play history are the youtubemusic_ tables in data/yascore.db.
-// The skill never opens SSH: it returns intents and the core runs the column.
-package youtubemusic
+// Package musicyoutube is the YouTube Music column skill.
+// Likes and history live in the core music store; this skill only returns intents.
+package musicyoutube
 
 import (
 	"context"
@@ -12,23 +11,23 @@ import (
 
 	"yascore/config"
 	"yascore/internal/domain"
+	"yascore/internal/music"
 	"yascore/internal/skillstate"
 	"yascore/skills/protocol"
 )
 
 // Register connects this skill after the core server is already listening.
-func Register(ctx context.Context, url string, musicCfg config.YouTubeMusic) error {
+// store is the shared core music database; it must not be nil.
+func Register(ctx context.Context, url string, musicCfg config.MusicYouTube, store *music.Store) error {
+	if store == nil {
+		return fmt.Errorf("musicyoutube: music store is nil")
+	}
 	UseService(musicCfg.ServiceURL)
 	if err := skillstate.MigrateShared("."); err != nil {
 		return err
 	}
-	music, err := Open(musicCfg.Database)
-	if err != nil {
-		return err
-	}
-	defer music.Close()
-	speaker := &Speaker{music: music}
-	return protocol.RunMedia(ctx, url, "youtubemusic", tools(),
+	speaker := &Speaker{music: store}
+	return protocol.RunMedia(ctx, url, "musicyoutube", tools(),
 		[]string{"ютуб", "youtube", "музык", "песн", "трек", "плейлист", "альбом", "включи", "поставь", "пауза", "стоп", "следующ", "предыдущ", "назад", "дальше", "вперед", "вперёд", "продолж", "радио", "лайк", "нравится", "похож"},
 		speaker.handle, speaker.level)
 }
@@ -38,15 +37,16 @@ func tools() []domain.Tool {
 		{
 			Name: "play_music",
 			Description: "Включить YouTube Music. " +
-				"Если сказали просто «включи музыку», без названия — kind=any и пустой query: продолжится остановленный трек, а если очереди нет, включится подборка. " +
-				"query — только название. kind=track, playlist, artist или any. " +
-				"kind=likes и пустой query — трек из лайков, сохранённых ассистентом. " +
-				"kind=similar и пустой query — поиск по исполнителю или названию из этих лайков.",
+				"kind=mix — новая подборка. kind=any — продолжить с паузы, иначе случайный лайк или подборка. " +
+				"kind=resume — только продолжение с места паузы. " +
+				"query — только название. kind=track, playlist, artist. " +
+				"kind=likes — лайки по порядку (название и исполнитель). kind=shuffle — лайки вперемешку. " +
+				"kind=similar — поиск по исполнителю или названию из лайков.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
 					"query": map[string]any{"type": "string", "description": "Название трека, плейлиста или исполнителя. Пусто, если просят просто музыку, лайки или что-нибудь такое же."},
-					"kind":  map[string]any{"type": "string", "enum": []any{"any", "track", "playlist", "artist", "album", "radio", "likes", "similar"}},
+					"kind":  map[string]any{"type": "string", "enum": []any{"any", "mix", "resume", "track", "playlist", "artist", "album", "radio", "likes", "shuffle", "similar"}},
 				},
 				"required": []any{"kind"},
 			},
@@ -54,9 +54,8 @@ func tools() []domain.Tool {
 		{
 			Name: "music_control",
 			Description: "Управление плеером: pause, resume, next, previous, stop, status, like, unlike. " +
-				"previous включает предыдущий сохранённый трек по названию и оставляет текущий следующим. " +
-				"next включает этот следующий трек, если он уже отложен. " +
-				"like — лайк текущего или только что сыгравшего трека. unlike — убрать этот лайк.",
+				"previous/next по сохранённой очереди music_plays (сдвиг current); на краю — команды колонки. " +
+				"Каждый старт пишет music_history. like — лайк текущего или только что сыгравшего трека. unlike — убрать этот лайк.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -71,12 +70,13 @@ func tools() []domain.Tool {
 	}
 }
 
-// Speaker keeps likes and queue memory. The column is driven by the core.
+// Speaker keeps queue memory. Likes live in the core store.
 type Speaker struct {
-	music *Store
+	music *music.Store
+
+	shuffle []savedTrack
 }
 
-// level reports whether the player is making sound. Loudness lives in the core.
 func (s *Speaker) level(_ context.Context, arguments string) (string, error) {
 	arguments = strings.TrimSpace(arguments)
 	if arguments == "" {
@@ -89,10 +89,9 @@ func (s *Speaker) level(_ context.Context, arguments string) (string, error) {
 	return "ok", nil
 }
 
-func (s Speaker) handle(ctx context.Context, name, arguments string) (string, error) {
+func (s *Speaker) handle(ctx context.Context, name, arguments string) (string, error) {
 	switch name {
 	case "pause", "resume":
-		// Core owns pause/resume on the column. Acknowledge for old bus clients.
 		return "ok", nil
 	case "play_music":
 		var args struct {
@@ -128,12 +127,22 @@ func (s Speaker) handle(ctx context.Context, name, arguments string) (string, er
 	}
 }
 
-func (s Speaker) playIntent(ctx context.Context, query, kind string) (string, error) {
+func (s *Speaker) playIntent(ctx context.Context, query, kind string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
 	case "likes":
-		return s.playLikesIntent(ctx)
+		return s.playLikesIntent(ctx, false)
+	case "shuffle":
+		return s.playLikesIntent(ctx, true)
 	case "similar":
 		return s.playSimilarIntent(ctx)
+	case "mix":
+		return intentJSON(domain.MusicIntent{Do: domain.MusicPlayMix})
+	case "resume":
+		return intentJSON(domain.MusicIntent{Do: domain.MusicResumeOnly})
+	case "any":
+		if vagueMusic(query, kind) {
+			return intentJSON(domain.MusicIntent{Do: domain.MusicResumeMix})
+		}
 	}
 	if vagueMusic(query, kind) {
 		return intentJSON(domain.MusicIntent{Do: domain.MusicResumeMix})
@@ -141,7 +150,7 @@ func (s Speaker) playIntent(ctx context.Context, query, kind string) (string, er
 	return s.namedPlayIntent(ctx, query, kind)
 }
 
-func (s Speaker) namedPlayIntent(_ context.Context, query, kind string) (string, error) {
+func (s *Speaker) namedPlayIntent(_ context.Context, query, kind string) (string, error) {
 	query = cleanQuery(query)
 	switch kind {
 	case "playlist":
@@ -174,4 +183,18 @@ func intentJSON(intent domain.MusicIntent) (string, error) {
 
 func sayIntent(text string) (string, error) {
 	return intentJSON(domain.MusicIntent{Do: domain.MusicSay, Text: text})
+}
+
+func (s *Speaker) setShuffle(order []savedTrack) {
+	if s == nil {
+		return
+	}
+	s.shuffle = append([]savedTrack(nil), order...)
+}
+
+func (s *Speaker) clearShuffle() {
+	if s == nil {
+		return
+	}
+	s.shuffle = nil
 }

@@ -1,4 +1,4 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"encoding/json"
@@ -10,17 +10,17 @@ import (
 )
 
 func init() {
-	skillstate.RegisterMigrator("youtubemusic", migrateSharedDoc)
+	skillstate.RegisterMigrator("musicyoutube", migrateSharedDoc)
 }
 
-// migrateSharedDoc copies the old data/skills.json "youtubemusic" document
+// migrateSharedDoc copies the old data/skills.json "musicyoutube" document
 // into this skill's JSON files. The SQLite store imports those files once.
 func migrateSharedDoc(root string, doc json.RawMessage) error {
 	obj, err := jsonObject(doc)
 	if err != nil {
 		return err
 	}
-	skillDir := filepath.Join(root, "skills", "youtube-music")
+	skillDir := filepath.Join(root, "skills", "musicyoutube")
 	if raw, ok := obj["likes"]; ok {
 		if err := writeIfMissing(skillDir, "likes", wrapJSONKey("likes", raw)); err != nil {
 			return err
@@ -43,7 +43,7 @@ func migrateSharedDoc(root string, doc json.RawMessage) error {
 	if len(queue) > 0 {
 		body, err := json.Marshal(queue)
 		if err != nil {
-			return fmt.Errorf("youtube-music: %w", err)
+			return fmt.Errorf("musicyoutube: %w", err)
 		}
 		if err := writeIfMissing(skillDir, "queue", json.RawMessage(body)); err != nil {
 			return err
@@ -60,7 +60,7 @@ func migrateSharedDoc(root string, doc json.RawMessage) error {
 func jsonObject(doc json.RawMessage) (map[string]json.RawMessage, error) {
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(doc, &obj); err != nil || obj == nil {
-		return nil, fmt.Errorf("youtube-music: shared document must be a json object")
+		return nil, fmt.Errorf("musicyoutube: shared document must be a json object")
 	}
 	return obj, nil
 }

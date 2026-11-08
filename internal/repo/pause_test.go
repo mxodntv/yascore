@@ -21,7 +21,7 @@ func TestPauseAllReachesSoundSkillsOnly(t *testing.T) {
 	go func() { _ = hub.Accept(ctx, radio) }()
 	go func() { _ = hub.Accept(ctx, search) }()
 
-	sendReg(t, music, domain.BusMessage{Type: "register", Name: "youtubemusic", Sound: true})
+	sendReg(t, music, domain.BusMessage{Type: "register", Name: "musicyoutube", Sound: true})
 	sendReg(t, radio, domain.BusMessage{Type: "register", Name: "radio", Sound: true})
 	sendReg(t, search, domain.BusMessage{
 		Type: "register", Name: "websearch",
@@ -54,7 +54,7 @@ func TestHubResumeReachesMediaSkillOnly(t *testing.T) {
 	go func() { _ = hub.Accept(ctx, music) }()
 	go func() { _ = hub.Accept(ctx, weather) }()
 	sendReg(t, music, domain.BusMessage{
-		Type: "register", Name: "youtubemusic", Sound: true, Media: true,
+		Type: "register", Name: "musicyoutube", Sound: true, Media: true,
 		Tools: []domain.Tool{{Name: "play_music"}},
 	})
 	sendReg(t, weather, domain.BusMessage{
@@ -95,7 +95,7 @@ func TestHubResumeReachesMediaSkillOnly(t *testing.T) {
 		}
 	}()
 
-	if name, ok := hub.MediaSkill("play_music"); !ok || name != "youtubemusic" {
+	if name, ok := hub.MediaSkill("play_music"); !ok || name != "musicyoutube" {
 		t.Fatalf("media skill %q %v", name, ok)
 	}
 	if _, ok := hub.MediaSkill("weather"); ok {
@@ -107,7 +107,7 @@ func TestHubResumeReachesMediaSkillOnly(t *testing.T) {
 	if _, err := hub.Resume(ctx, "weather"); err == nil {
 		t.Fatal("resumed an ordinary skill")
 	}
-	got, err := hub.Resume(ctx, "youtubemusic")
+	got, err := hub.Resume(ctx, "musicyoutube")
 	if err != nil || got != domain.SilentReply {
 		t.Fatalf("resume %q %v", got, err)
 	}

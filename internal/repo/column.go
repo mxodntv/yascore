@@ -102,6 +102,24 @@ func (c *Column) Recommendations(ctx context.Context) (string, error) {
 	return c.run(ctx, shellQuote(c.bin())+" --json recommendations")
 }
 
+// Add enqueues a track id in the column player playlist.
+func (c *Column) Add(ctx context.Context, id string) (string, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return "", fmt.Errorf("пустой id")
+	}
+	return c.run(ctx, shellQuote(c.bin())+" add "+shellQuote(id))
+}
+
+// CacheAdd downloads/resolves a track into ytm's local cache for faster next/prev.
+func (c *Column) CacheAdd(ctx context.Context, id string) (string, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return "", fmt.Errorf("пустой id")
+	}
+	return c.run(ctx, shellQuote(c.bin())+" cache add "+shellQuote(id))
+}
+
 func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
 }

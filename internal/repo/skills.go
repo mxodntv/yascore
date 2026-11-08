@@ -20,11 +20,11 @@ type Hub struct {
 	mu     sync.Mutex
 	skills map[string]*skillSession
 	byTool map[string]string
-	player *YTMPlayer
+	player *MusicPlayer
 }
 
 // UsePlayer attaches the column music player. Skills only return intents.
-func (h *Hub) UsePlayer(p *YTMPlayer) {
+func (h *Hub) UsePlayer(p *MusicPlayer) {
 	if h == nil {
 		return
 	}
@@ -34,10 +34,10 @@ func (h *Hub) UsePlayer(p *YTMPlayer) {
 	}
 }
 
-// askMusic asks the youtubemusic skill without going through Invoke again.
+// askMusic asks the musicyoutube skill without going through Invoke again.
 func (h *Hub) askMusic(ctx context.Context, name, arguments string) (string, error) {
 	h.mu.Lock()
-	sess := h.skills["youtubemusic"]
+	sess := h.skills["musicyoutube"]
 	if sess == nil {
 		sess = h.skills[h.byTool[name]]
 	}

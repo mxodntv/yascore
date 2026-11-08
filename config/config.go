@@ -113,7 +113,7 @@ type Skills struct {
 	Currency     Currency     `yaml:"currency" json:"currency"`
 	WebSearch    WebSearch    `yaml:"websearch" json:"websearch"`
 	Mood         Mood         `yaml:"mood" json:"mood"`
-	YouTubeMusic YouTubeMusic `yaml:"youtube_music" json:"youtube_music"`
+	MusicYouTube MusicYouTube `yaml:"musicyoutube" json:"musicyoutube"`
 }
 
 // Weather is the forecast skill.
@@ -152,8 +152,8 @@ type MoodTone struct {
 	Keys   []string `yaml:"keys" json:"keys"`
 }
 
-// YouTubeMusic is the column player skill and the paths the column scripts use.
-type YouTubeMusic struct {
+// MusicYouTube is the column player skill and the paths the column scripts use.
+type MusicYouTube struct {
 	Host         string `yaml:"host" json:"host"`
 	Port         int    `yaml:"port" json:"port"`
 	User         string `yaml:"user" json:"user"`
@@ -185,7 +185,7 @@ type SkillSet struct {
 	Currency     bool
 	WebSearch    bool
 	Mood         bool
-	YouTubeMusic bool
+	MusicYouTube bool
 }
 
 // Load reads config.yml, substitutes {name}, and parses durations.

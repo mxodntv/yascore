@@ -1,12 +1,14 @@
-package youtubemusic
+package musicyoutube
 
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
 	"yascore/internal/domain"
+	"yascore/internal/music"
 )
 
 const (
@@ -31,7 +33,7 @@ type musicState struct {
 	Index  int          `json:"index,omitempty"`
 }
 
-func (s Speaker) likeIntent(ctx context.Context, title, artists, id string) (string, error) {
+func (s *Speaker) likeIntent(ctx context.Context, title, artists, id string) (string, error) {
 	track, ok := s.target(title, artists, id)
 	if !ok {
 		return sayIntent(nothingToLike)
@@ -41,18 +43,18 @@ func (s Speaker) likeIntent(ctx context.Context, title, artists, id string) (str
 	}
 	now := time.Now().UTC().Truncate(time.Second)
 	last := now
-	if played, found, err := s.music.LastPlayed(track.Title, track.Artists, ServiceYouTube); err != nil {
+	if played, found, err := s.music.LastPlayed(track.Title, track.Artists); err != nil {
 		return "", err
 	} else if found {
 		last = played
 	}
-	if err := s.music.Like(track.Title, track.Artists, track.ID, ServiceYouTube, now, last); err != nil {
+	if err := s.music.Like(track.Title, track.Artists, track.ID, now, last); err != nil {
 		return "", err
 	}
 	return sayIntent(likedOK)
 }
 
-func (s Speaker) unlikeIntent(ctx context.Context, title, artists, id string) (string, error) {
+func (s *Speaker) unlikeIntent(ctx context.Context, title, artists, id string) (string, error) {
 	if s.music == nil {
 		return "", fmt.Errorf("лайки не сохраняются")
 	}
@@ -70,7 +72,7 @@ func (s Speaker) unlikeIntent(ctx context.Context, title, artists, id string) (s
 	if !containsTrack(likesToSaved(likes), track) {
 		return sayIntent(notInLikes)
 	}
-	removed, err := s.music.Unlike(track.Title, track.Artists, track.ID, ServiceYouTube)
+	removed, err := s.music.Unlike(track.Title, track.Artists, track.ID)
 	if err != nil {
 		return "", err
 	}
@@ -80,26 +82,46 @@ func (s Speaker) unlikeIntent(ctx context.Context, title, artists, id string) (s
 	return sayIntent(unlikedOK)
 }
 
-func (s Speaker) playLikesIntent(ctx context.Context) (string, error) {
+func (s *Speaker) playLikesIntent(ctx context.Context, shuffle bool) (string, error) {
 	state, err := s.load(ctx)
 	if err != nil {
 		return "", err
 	}
 	if len(state.Likes) == 0 {
+		s.clearShuffle()
 		return sayIntent(noLikesYet)
 	}
-	track := state.Likes[0]
-	query := playbackName(track)
-	if query == "" {
-		query = playbackQuery(track)
+	if shuffle {
+		order := shuffleTracks(state.Likes)
+		s.setShuffle(order)
+		state.Tracks = order
+		state.Index = 0
+		state.Recent = &order[0]
+		if err := s.save(ctx, state); err != nil {
+			return "", err
+		}
+		return s.playTrackQuery(order[0])
 	}
-	if query == "" {
-		return sayIntent(noLikesYet)
-	}
-	return intentJSON(domain.MusicIntent{Do: domain.MusicSearchPlay, Query: query})
+	s.clearShuffle()
+	return s.playTrackQuery(state.Likes[0])
 }
 
-func (s Speaker) playSimilarIntent(ctx context.Context) (string, error) {
+func (s *Speaker) playTrackQuery(track savedTrack) (string, error) {
+	// Play by title+artist on the current platform, not by a platform URL.
+	query := playbackName(track)
+	if query == "" {
+		return sayIntent(noLikesYet)
+	}
+	return intentJSON(domain.MusicIntent{Do: domain.MusicSearchPlay, Query: query, Follow: true})
+}
+
+func shuffleTracks(list []savedTrack) []savedTrack {
+	out := append([]savedTrack(nil), list...)
+	rand.Shuffle(len(out), func(i, j int) { out[i], out[j] = out[j], out[i] })
+	return out
+}
+
+func (s *Speaker) playSimilarIntent(ctx context.Context) (string, error) {
 	state, err := s.load(ctx)
 	if err != nil {
 		return "", err
@@ -118,7 +140,7 @@ func (s Speaker) playSimilarIntent(ctx context.Context) (string, error) {
 	return intentJSON(domain.MusicIntent{Do: domain.MusicSearchPlay, Query: query})
 }
 
-func (s Speaker) target(title, artists, id string) (savedTrack, bool) {
+func (s *Speaker) target(title, artists, id string) (savedTrack, bool) {
 	title = strings.TrimSpace(title)
 	artists = strings.TrimSpace(artists)
 	id = strings.TrimSpace(id)
@@ -136,7 +158,7 @@ func (s Speaker) target(title, artists, id string) (savedTrack, bool) {
 	return track, true
 }
 
-func (s Speaker) load(context.Context) (musicState, error) {
+func (s *Speaker) load(context.Context) (musicState, error) {
 	state := musicState{Likes: []savedTrack{}}
 	if s.music == nil {
 		return state, fmt.Errorf("лайки не сохраняются")
@@ -155,15 +177,15 @@ func (s Speaker) load(context.Context) (musicState, error) {
 	return state, nil
 }
 
-func (s Speaker) save(_ context.Context, state musicState) error {
+func (s *Speaker) save(_ context.Context, state musicState) error {
 	if s.music == nil {
 		return fmt.Errorf("лайки не сохраняются")
 	}
 	return s.music.Save(toSnapshot(state))
 }
 
-func toSnapshot(state musicState) Snapshot {
-	snap := Snapshot{
+func toSnapshot(state musicState) music.Snapshot {
+	snap := music.Snapshot{
 		Plays: toTracks(state.Tracks),
 		Index: state.Index,
 	}
@@ -177,27 +199,26 @@ func toSnapshot(state musicState) Snapshot {
 	return snap
 }
 
-func toTracks(list []savedTrack) []Track {
+func toTracks(list []savedTrack) []music.Track {
 	if list == nil {
 		return nil
 	}
-	out := make([]Track, 0, len(list))
+	out := make([]music.Track, 0, len(list))
 	for _, item := range list {
 		out = append(out, toTrack(item))
 	}
 	return out
 }
 
-func toTrack(item savedTrack) Track {
-	return Track{
-		VideoID: item.ID,
-		Title:   item.Title,
-		Artist:  item.Artists,
-		Service: ServiceYouTube,
+func toTrack(item savedTrack) music.Track {
+	return music.Track{
+		ExternalID: item.ID,
+		Title:      item.Title,
+		Artist:     item.Artists,
 	}
 }
 
-func fromTracks(list []Track) []savedTrack {
+func fromTracks(list []music.Track) []savedTrack {
 	out := make([]savedTrack, 0, len(list))
 	for _, item := range list {
 		out = append(out, fromTrack(item))
@@ -205,14 +226,14 @@ func fromTracks(list []Track) []savedTrack {
 	return out
 }
 
-func fromTrack(item Track) savedTrack {
-	return savedTrack{ID: item.VideoID, Title: item.Title, Artists: item.Artist}
+func fromTrack(item music.Track) savedTrack {
+	return savedTrack{ID: item.ExternalID, Title: item.Title, Artists: item.Artist}
 }
 
-func likesToSaved(likes []Like) []savedTrack {
+func likesToSaved(likes []music.Like) []savedTrack {
 	out := make([]savedTrack, 0, len(likes))
 	for _, item := range likes {
-		out = append(out, savedTrack{ID: item.VideoID, Title: item.Title, Artists: item.Artist})
+		out = append(out, savedTrack{ID: item.ExternalID, Title: item.Title, Artists: item.Artist})
 	}
 	return out
 }
@@ -232,13 +253,6 @@ func sameTrack(a, b savedTrack) bool {
 	}
 	return strings.EqualFold(strings.TrimSpace(a.Title), strings.TrimSpace(b.Title)) &&
 		strings.EqualFold(strings.TrimSpace(a.Artists), strings.TrimSpace(b.Artists))
-}
-
-func playbackQuery(track savedTrack) string {
-	if strings.TrimSpace(track.ID) != "" {
-		return serviceBase + "/watch?v=" + strings.TrimSpace(track.ID)
-	}
-	return playbackName(track)
 }
 
 func playbackName(track savedTrack) string {

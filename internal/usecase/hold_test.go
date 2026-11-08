@@ -173,6 +173,58 @@ func TestWakeDoesNotResumeAlreadyStoppedTrack(t *testing.T) {
 	}
 }
 
+func TestLikeKeepsWakeHoldAndResumes(t *testing.T) {
+	name, words := exampleAssistant(t)
+	bus := &likeHoldBus{
+		holdBus: holdBus{
+			pausePos: 42000,
+			tools:    []domain.Tool{{Name: "music_control"}},
+			hints:    []string{"лайк"},
+		},
+		body: domain.LikedReply,
+	}
+	u := New(Deps{LLM: &fakeLLM{text: "не должна"}, Wake: fakeWake{words: words}, Skills: bus, Prompt: "p"})
+	u.holdQuiet = 30 * time.Millisecond
+
+	reply, err := u.HandleUtterance(context.Background(), name+", лайк")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply.Quiet || !reply.Instant || reply.Text != domain.LikedReply {
+		t.Fatalf("reply %+v", reply)
+	}
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		_, resumes := bus.snapshot()
+		if len(resumes) == 1 && resumes[0] == 42000 {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	_, resumes := bus.snapshot()
+	t.Fatalf("like must resume immediately (Instant), resumes=%v events=%v", resumes, first(bus.snapshot()))
+}
+
+func TestQuietForInstantIsZero(t *testing.T) {
+	u := New(Deps{})
+	u.holdQuiet = time.Second
+	if got := u.quietFor(domain.Reply{Text: "Поставила лайк", Instant: true}); got != 0 {
+		t.Fatalf("instant quiet %v", got)
+	}
+	if got := u.quietFor(domain.Reply{Text: "Ок."}); got != time.Second {
+		t.Fatalf("normal quiet %v", got)
+	}
+}
+
+type likeHoldBus struct {
+	holdBus
+	body string
+}
+
+func (b *likeHoldBus) Invoke(context.Context, domain.ToolCall) (string, error) {
+	return b.body, nil
+}
+
 func TestBareStopWithoutWakeStillStops(t *testing.T) {
 	bus := &holdBus{pausePos: 1}
 	llm := &fakeLLM{text: "не должна вызваться"}

@@ -4,9 +4,9 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
 . "$script_dir/load-config.sh"
-: "${CFG_BRIDGE_CONFIG:?set skills.youtube_music.bridge_config}"
-: "${CFG_WAKE_FILE:?set skills.youtube_music.wake_file}"
-: "${CFG_BRIDGE_BIN:?set skills.youtube_music.bridge_bin}"
+: "${CFG_BRIDGE_CONFIG:?set skills.musicyoutube.bridge_config}"
+: "${CFG_WAKE_FILE:?set skills.musicyoutube.wake_file}"
+: "${CFG_BRIDGE_BIN:?set skills.musicyoutube.bridge_bin}"
 HOST="${CFG_USER}@${CFG_HOST}"
 SSH="ssh -o ConnectTimeout=20 -o LogLevel=ERROR -p ${CFG_PORT}"
 json=/tmp/yascore-config.json
@@ -17,7 +17,7 @@ import json, sys
 from urllib.parse import urlparse
 yas = json.load(open(sys.argv[1], encoding="utf-8"))
 core = yas["core"]
-music = yas["skills"]["youtube_music"]
+music = yas["skills"]["musicyoutube"]
 pub = urlparse(core["server"]["public_base"])
 stt = urlparse(core["stt"]["url"])
 cfg = json.load(open("/tmp/mini2-qb-config.json", encoding="utf-8"))

@@ -23,8 +23,8 @@ if [ -f "$script_dir/local.env" ]; then
 fi
 # shellcheck disable=SC1091
 . "$script_dir/load-config.sh"
-: "${CFG_SPOTTER_DIR:?set skills.youtube_music.spotter_dir}"
-: "${CFG_SPOTTER_BIND:?set skills.youtube_music.spotter_bind}"
+: "${CFG_SPOTTER_DIR:?set skills.musicyoutube.spotter_dir}"
+: "${CFG_SPOTTER_BIND:?set skills.musicyoutube.spotter_bind}"
 HOST="${CFG_USER}@${CFG_HOST}"
 PORT="${CFG_PORT}"
 SSH="ssh -o ConnectTimeout=8 -o StrictHostKeyChecking=accept-new -p $PORT"
